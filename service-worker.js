@@ -1,3 +1,4 @@
+// Keep navigation fresh on GitHub Pages deploys
 const CACHE_NAME = 'void-games-v3';
 const URLS_TO_CACHE = [
   './',
