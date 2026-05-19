@@ -17,7 +17,7 @@ html,body{
 width:100%;
 height:100%;
 overflow:hidden;
-background:black;
+background:#050505;
 font-family:monospace;
 user-select:none;
 -webkit-user-select:none;
@@ -38,23 +38,143 @@ height:100vh;
 <canvas id="game"></canvas>
 
 <script>
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+let w,h;
+let mobile=false;
+
+const player={
+x:80,
+y:0,
+size:34,
+vy:0,
+gravity:0.7,
+jump:-13,
+ground:0
+};
+
+let holding=false;
 
 function resize(){
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
+
+w=canvas.width=window.innerWidth;
+h=canvas.height=window.innerHeight;
+
+mobile=h>w;
+
+player.ground=mobile?h-180:h-120;
+
+if(mobile){
+player.x=55;
+player.size=28;
+player.gravity=0.6;
+player.jump=-11;
+}else{
+player.x=80;
+player.size=34;
+player.gravity=0.7;
+player.jump=-13;
+}
+
+player.y=player.ground-player.size;
 }
 
 resize();
 
-window.addEventListener('resize',resize);
+window.addEventListener("resize",resize);
 
-ctx.fillStyle='white';
-ctx.font='20px monospace';
+function press(){
 
-ctx.fillText('VOID RUNNER V2',40,60);
-ctx.fillText('mobile text selection disabled',40,100);
+if(player.y>=player.ground-player.size-1){
+player.vy=player.jump;
+}
+
+holding=true;
+}
+
+function release(){
+holding=false;
+}
+
+window.addEventListener("pointerdown",(e)=>{
+e.preventDefault();
+press();
+},{passive:false});
+
+window.addEventListener("pointerup",release);
+
+window.addEventListener("keydown",(e)=>{
+
+if(e.code==="Space"){
+
+e.preventDefault();
+
+press();
+}
+
+});
+
+window.addEventListener("keyup",(e)=>{
+
+if(e.code==="Space"){
+release();
+}
+
+});
+
+function update(){
+
+if(holding && player.vy<0){
+player.vy-=0.18;
+}
+
+player.vy+=player.gravity;
+
+player.y+=player.vy;
+
+if(player.y>player.ground-player.size){
+
+player.y=player.ground-player.size;
+player.vy=0;
+}
+}
+
+function draw(){
+
+ctx.fillStyle="#050505";
+ctx.fillRect(0,0,w,h);
+
+ctx.fillStyle="rgba(255,255,255,0.08)";
+ctx.fillRect(0,player.ground,w,2);
+
+ctx.fillStyle="white";
+ctx.fillRect(
+player.x,
+player.y,
+player.size,
+player.size
+);
+
+ctx.fillStyle="rgba(255,255,255,0.3)";
+ctx.font="14px monospace";
+
+ctx.fillText(
+mobile?"MOBILE TEST":"DESKTOP TEST",
+20,
+30
+);
+}
+
+function loop(){
+
+update();
+draw();
+
+requestAnimationFrame(loop);
+}
+
+loop();
 </script>
 
 </body>
