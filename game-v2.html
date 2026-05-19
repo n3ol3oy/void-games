@@ -1,1 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Void Runner V2</title>
 
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+background:black;
+font-family:monospace;
+user-select:none;
+-webkit-user-select:none;
+-webkit-touch-callout:none;
+touch-action:none;
+}
+
+canvas{
+display:block;
+width:100vw;
+height:100vh;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<script>
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+
+function resize(){
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+}
+
+resize();
+
+window.addEventListener('resize',resize);
+
+ctx.fillStyle='white';
+ctx.font='20px monospace';
+
+ctx.fillText('VOID RUNNER V2',40,60);
+ctx.fillText('mobile text selection disabled',40,100);
+</script>
+
+</body>
+</html>
