@@ -2,20 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Void Runner</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
       background: #050505;
       overflow: hidden;
-      font-family: Arial, sans-serif;
-      touch-action: manipulation;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      touch-action: none;
+      color: white;
     }
 
     canvas {
@@ -24,158 +26,414 @@
       height: 100vh;
     }
 
-    .ui {
+    .hud {
       position: fixed;
-      top: 20px;
-      left: 20px;
-      color: white;
+      top: 14px;
+      left: 14px;
+      right: 14px;
       z-index: 10;
-      font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 10px 12px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px rgba(255, 0, 76, 0.08);
+    }
+
+    .score-row {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .score-row strong {
+      display: block;
+      margin-top: 4px;
+      color: white;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .controls {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    button {
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
     }
 
     .hint {
       position: fixed;
-      bottom: 20px;
+      bottom: 18px;
       width: 100%;
       text-align: center;
-      color: #888;
-      font-size: 14px;
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      background: rgba(5, 5, 5, 0.55);
+      backdrop-filter: blur(4px);
+      text-align: center;
+      padding: 24px;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .game-over-card {
+      max-width: 420px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5);
+    }
+
+    .game-over-card h1 {
+      font-size: 34px;
+      margin-bottom: 10px;
+      letter-spacing: -0.04em;
+    }
+
+    .game-over-card p {
+      color: #aaa;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 600px) {
+      .hud {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+      }
+
+      .score-row {
+        gap: 10px;
+        font-size: 11px;
+      }
+
+      .score-row strong {
+        font-size: 18px;
+      }
+
+      .controls {
+        font-size: 11px;
+      }
+
+      button {
+        padding: 7px 10px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="ui">
-    Score: <span id="score">0</span><br>
-    Best: <span id="best">0</span>
+  <div class="hud">
+    <div class="panel score-row">
+      <div>Score<strong id="score">0</strong></div>
+      <div>Best<strong id="best">0</strong></div>
+    </div>
+
+    <div class="panel controls">
+      <button id="resetBest">Reset Best</button>
+      <label>
+        <input id="autoRestart" type="checkbox" />
+        instant restart
+      </label>
+    </div>
   </div>
 
-  <div class="hint">
-    SPACE / TAP TO JUMP
+  <div id="overlay" class="overlay">
+    <div class="game-over-card">
+      <h1>you fell</h1>
+      <p>Tap, click, or press space once to restart.</p>
+      <button id="restartButton">Restart</button>
+    </div>
   </div>
 
+  <div class="hint">hold = longer jump · release = fall · second tap = double jump</div>
   <canvas id="game"></canvas>
 
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const overlay = document.getElementById('overlay');
+    const restartButton = document.getElementById('restartButton');
+    const resetBestButton = document.getElementById('resetBest');
+    const autoRestartCheckbox = document.getElementById('autoRestart');
 
-    let w, h;
+    let w = 0;
+    let h = 0;
+    let groundY = 0;
+    let lastTime = performance.now();
+    let spawnTimer = 0;
+    let gameOver = false;
+    let pressHeld = false;
+    let best = Number(localStorage.getItem('void_best') || 0);
+    let autoRestart = localStorage.getItem('void_auto_restart') === 'true';
 
-    function resize() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-    }
-
-    resize();
-    window.addEventListener('resize', resize);
-
-    const ground = h - 120;
+    autoRestartCheckbox.checked = autoRestart;
+    bestEl.textContent = best;
 
     const player = {
       x: 120,
-      y: ground,
+      y: 0,
       size: 40,
       vy: 0,
-      gravity: 0.8,
-      jump: -16
+      jumpsLeft: 2,
+      holdFrames: 0,
+      maxHoldFrames: 16,
+      gravity: 0.92,
+      fallGravity: 1.18,
+      jumpPower: -15.5,
+      holdLift: -0.55
     };
 
     let obstacles = [];
     let score = 0;
     let speed = 8;
 
-    let best = localStorage.getItem('void_best') || 0;
-    document.getElementById('best').textContent = best;
-
-    function spawnObstacle() {
-      obstacles.push({
-        x: w + 50,
-        y: ground,
-        width: 25 + Math.random() * 25,
-        height: 40 + Math.random() * 50
-      });
+    function resize() {
+      w = canvas.width = window.innerWidth * window.devicePixelRatio;
+      h = canvas.height = window.innerHeight * window.devicePixelRatio;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+      groundY = window.innerHeight - Math.max(95, window.innerHeight * 0.16);
+      if (!gameOver && player.y === 0) player.y = groundY - player.size;
     }
 
-    setInterval(spawnObstacle, 1400);
-
-    function jump() {
-      if (player.y >= ground) {
-        player.vy = player.jump;
-      }
-    }
-
-    window.addEventListener('keydown', e => {
-      if (e.code === 'Space') jump();
-    });
-
-    window.addEventListener('touchstart', jump);
-    window.addEventListener('mousedown', jump);
-
-    function reset() {
+    function resetGame() {
       obstacles = [];
       score = 0;
       speed = 8;
+      spawnTimer = 60;
+      gameOver = false;
+      pressHeld = false;
+      player.y = groundY - player.size;
+      player.vy = 0;
+      player.jumpsLeft = 2;
+      player.holdFrames = 0;
+      overlay.classList.remove('show');
     }
 
-    function update() {
-      player.vy += player.gravity;
-      player.y += player.vy;
+    function saveBest() {
+      const finalScore = Math.floor(score);
+      if (finalScore > best) {
+        best = finalScore;
+        localStorage.setItem('void_best', String(best));
+        bestEl.textContent = best;
+      }
+    }
 
-      if (player.y > ground) {
-        player.y = ground;
-        player.vy = 0;
+    function die() {
+      saveBest();
+      if (autoRestart) {
+        resetGame();
+      } else {
+        gameOver = true;
+        overlay.classList.add('show');
+      }
+    }
+
+    function startPress() {
+      if (gameOver) {
+        resetGame();
+        return;
       }
 
-      obstacles.forEach(o => {
-        o.x -= speed;
+      if (!pressHeld && player.jumpsLeft > 0) {
+        player.vy = player.jumpPower;
+        player.jumpsLeft -= 1;
+        player.holdFrames = 0;
+      }
 
-        if (
-          player.x < o.x + o.width &&
-          player.x + player.size > o.x &&
-          player.y < o.y + o.height &&
-          player.y + player.size > o.y
-        ) {
-          if (score > best) {
-            best = score;
-            localStorage.setItem('void_best', best);
-            document.getElementById('best').textContent = best;
-          }
+      pressHeld = true;
+    }
 
-          reset();
-        }
+    function endPress() {
+      pressHeld = false;
+      if (player.vy < -4) player.vy *= 0.55;
+    }
+
+    function spawnObstacle() {
+      const height = 35 + Math.random() * 62;
+      const width = 22 + Math.random() * 30;
+      obstacles.push({
+        x: window.innerWidth + 60,
+        y: groundY - height,
+        width,
+        height
       });
+    }
 
-      obstacles = obstacles.filter(o => o.x + o.width > 0);
+    function update(dt) {
+      if (gameOver) return;
 
-      score += 0.05;
-      speed += 0.0005;
+      const onGround = player.y >= groundY - player.size - 0.5;
 
-      document.getElementById('score').textContent = Math.floor(score);
+      if (onGround) {
+        player.y = groundY - player.size;
+        player.vy = 0;
+        player.jumpsLeft = 2;
+        player.holdFrames = 0;
+      } else if (pressHeld && player.holdFrames < player.maxHoldFrames && player.vy < 0) {
+        player.vy += player.holdLift * dt;
+        player.holdFrames += dt;
+      }
+
+      const gravity = pressHeld && player.vy < 0 ? player.gravity : player.fallGravity;
+      player.vy += gravity * dt;
+      player.y += player.vy * dt;
+
+      if (player.y > groundY - player.size) {
+        player.y = groundY - player.size;
+      }
+
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) {
+        spawnObstacle();
+        spawnTimer = Math.max(48, 105 - speed * 2) + Math.random() * 42;
+      }
+
+      for (const obstacle of obstacles) {
+        obstacle.x -= speed * dt;
+
+        const hit =
+          player.x < obstacle.x + obstacle.width &&
+          player.x + player.size > obstacle.x &&
+          player.y < obstacle.y + obstacle.height &&
+          player.y + player.size > obstacle.y;
+
+        if (hit) die();
+      }
+
+      obstacles = obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
+      score += 0.06 * dt;
+      speed += 0.0012 * dt;
+      scoreEl.textContent = Math.floor(score);
     }
 
     function draw() {
+      const viewW = window.innerWidth;
+      const viewH = window.innerHeight;
+
       ctx.fillStyle = '#050505';
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(0, 0, viewW, viewH);
 
-      ctx.fillStyle = '#111';
-      ctx.fillRect(0, ground + 40, w, 4);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+      for (let x = 0; x < viewW; x += 42) {
+        ctx.fillRect(x, 0, 1, viewH);
+      }
 
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.fillRect(0, groundY, viewW, 2);
+
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(player.x, player.y, player.size, player.size);
+      ctx.shadowBlur = 0;
 
       ctx.fillStyle = '#ff004c';
-      obstacles.forEach(o => {
-        ctx.fillRect(o.x, o.y, o.width, o.height);
-      });
+      for (const obstacle of obstacles) {
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+      }
     }
 
-    function loop() {
-      update();
+    function loop(now) {
+      const dt = Math.min((now - lastTime) / 16.67, 2);
+      lastTime = now;
+      update(dt);
       draw();
       requestAnimationFrame(loop);
     }
 
-    loop();
+    window.addEventListener('resize', () => {
+      resize();
+      resetGame();
+    });
+
+    window.addEventListener('keydown', event => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (!event.repeat) startPress();
+      }
+    });
+
+    window.addEventListener('keyup', event => {
+      if (event.code === 'Space') endPress();
+    });
+
+    window.addEventListener('pointerdown', event => {
+      if (event.target.closest('button, label, input')) return;
+      startPress();
+    });
+
+    window.addEventListener('pointerup', endPress);
+    window.addEventListener('pointercancel', endPress);
+
+    restartButton.addEventListener('click', resetGame);
+
+    resetBestButton.addEventListener('click', () => {
+      best = 0;
+      localStorage.setItem('void_best', '0');
+      bestEl.textContent = '0';
+    });
+
+    autoRestartCheckbox.addEventListener('change', () => {
+      autoRestart = autoRestartCheckbox.checked;
+      localStorage.setItem('void_auto_restart', String(autoRestart));
+    });
+
+    resize();
+    resetGame();
+    requestAnimationFrame(loop);
   </script>
 </body>
 </html>
