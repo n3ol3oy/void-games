@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Void Runner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #050505;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      touch-action: manipulation;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .ui {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      color: white;
+      z-index: 10;
+      font-size: 20px;
+    }
+
+    .hint {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="ui">
+    Score: <span id="score">0</span><br>
+    Best: <span id="best">0</span>
+  </div>
+
+  <div class="hint">
+    SPACE / TAP TO JUMP
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    let w, h;
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    const ground = h - 120;
+
+    const player = {
+      x: 120,
+      y: ground,
+      size: 40,
+      vy: 0,
+      gravity: 0.8,
+      jump: -16
+    };
+
+    let obstacles = [];
+    let score = 0;
+    let speed = 8;
+
+    let best = localStorage.getItem('void_best') || 0;
+    document.getElementById('best').textContent = best;
+
+    function spawnObstacle() {
+      obstacles.push({
+        x: w + 50,
+        y: ground,
+        width: 25 + Math.random() * 25,
+        height: 40 + Math.random() * 50
+      });
+    }
+
+    setInterval(spawnObstacle, 1400);
+
+    function jump() {
+      if (player.y >= ground) {
+        player.vy = player.jump;
+      }
+    }
+
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Space') jump();
+    });
+
+    window.addEventListener('touchstart', jump);
+    window.addEventListener('mousedown', jump);
+
+    function reset() {
+      obstacles = [];
+      score = 0;
+      speed = 8;
+    }
+
+    function update() {
+      player.vy += player.gravity;
+      player.y += player.vy;
+
+      if (player.y > ground) {
+        player.y = ground;
+        player.vy = 0;
+      }
+
+      obstacles.forEach(o => {
+        o.x -= speed;
+
+        if (
+          player.x < o.x + o.width &&
+          player.x + player.size > o.x &&
+          player.y < o.y + o.height &&
+          player.y + player.size > o.y
+        ) {
+          if (score > best) {
+            best = score;
+            localStorage.setItem('void_best', best);
+            document.getElementById('best').textContent = best;
+          }
+
+          reset();
+        }
+      });
+
+      obstacles = obstacles.filter(o => o.x + o.width > 0);
+
+      score += 0.05;
+      speed += 0.0005;
+
+      document.getElementById('score').textContent = Math.floor(score);
+    }
+
+    function draw() {
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, ground + 40, w, 4);
+
+      ctx.fillStyle = 'white';
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+
+      ctx.fillStyle = '#ff004c';
+      obstacles.forEach(o => {
+        ctx.fillRect(o.x, o.y, o.width, o.height);
+      });
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
