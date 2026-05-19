@@ -1,34 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Void Runner</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{background:#050505;color:white;overflow:hidden;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;touch-action:none}canvas{display:block;width:100vw;height:100vh}.hud{position:fixed;top:14px;left:14px;right:14px;z-index:10;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}.panel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 12px;backdrop-filter:blur(10px)}.score{display:flex;gap:16px;font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.08em}.score strong{display:block;margin-top:4px;color:white;font-size:22px;letter-spacing:0}.controls{pointer-events:auto;display:flex;flex-direction:column;gap:8px;align-items:flex-end}button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:white;border-radius:999px;padding:8px 12px;font:inherit;cursor:pointer}.toggle.on{background:rgba(255,0,76,.38);border-color:rgba(255,0,76,.75)}.hint{position:fixed;bottom:18px;width:100%;text-align:center;color:rgba(255,255,255,.45);font-size:12px;letter-spacing:.14em;text-transform:uppercase;z-index:10;pointer-events:none}.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:20;background:rgba(5,5,5,.55);backdrop-filter:blur(4px);text-align:center;padding:24px}.overlay.show{display:flex}.card{max-width:420px;width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:28px;box-shadow:0 20px 80px rgba(0,0,0,.5)}.card h1{font-size:34px;margin-bottom:10px}.card p{color:#aaa;margin-bottom:18px;line-height:1.5}@media(max-width:600px){.hud{top:10px;left:10px;right:10px}.score{gap:10px;font-size:11px}.score strong{font-size:18px}button{padding:7px 10px;font-size:11px}.hint{font-size:10px}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#050505" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="src/style.css" />
+  <title>Void Games</title>
 </head>
 <body>
-<div class="hud"><div class="panel score"><div>Score<strong id="score">0</strong></div><div>Best<strong id="best">0</strong></div></div><div class="panel controls"><button id="resetBest">Reset Best</button><button id="instant" class="toggle">Instant: Off</button></div></div>
-<div id="overlay" class="overlay"><div class="card"><h1>Game Over</h1><p>Tap, click, or press space once to restart.</p><button id="restart">Restart</button></div></div>
-<div class="hint">hold = longer jump · release = fall · second tap = double jump</div><canvas id="game"></canvas>
-<script>
-const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),overlay=document.getElementById('overlay'),restartBtn=document.getElementById('restart'),resetBestBtn=document.getElementById('resetBest'),instantBtn=document.getElementById('instant');
-let groundY=0,lastTime=performance.now(),spawnTimer=0,gameOver=false,pressHeld=false,score=0,speed=8,obstacles=[],mobile=false,runnerScale=1;
-let best=Number(localStorage.getItem('void_best')||0),instant=localStorage.getItem('void_auto_restart')==='true';
-const player={x:120,y:0,size:40,vy:0,jumpsLeft:2,holdFrames:0,maxHoldFrames:16,gravity:.92,fallGravity:1.18,jumpPower:-15.5,holdLift:-.55};bestEl.textContent=best;
-function resize(){mobile=innerWidth<700&&innerHeight>innerWidth;runnerScale=mobile?.72:1;player.size=mobile?30:40;player.x=mobile?72:120;player.gravity=mobile?.82:.92;player.fallGravity=mobile?1.06:1.18;player.jumpPower=mobile?-13.5:-15.5;player.holdLift=mobile?-.45:-.55;canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);groundY=innerHeight-(mobile?Math.max(145,innerHeight*.24):Math.max(95,innerHeight*.16));if(player.y===0)player.y=groundY-player.size}
-function updateInstantButton(){instantBtn.textContent=instant?'Instant: On':'Instant: Off';instantBtn.classList.toggle('on',instant)}
-function resetGame(){obstacles=[];score=0;speed=mobile?6.4:8;spawnTimer=mobile?90:60;gameOver=false;pressHeld=false;player.y=groundY-player.size;player.vy=0;player.jumpsLeft=2;player.holdFrames=0;overlay.classList.remove('show')}
-function saveBest(){const s=Math.floor(score);if(s>best){best=s;localStorage.setItem('void_best',String(best));bestEl.textContent=best}}
-function die(){saveBest();if(instant)resetGame();else{gameOver=true;overlay.classList.add('show')}}
-function startPress(){if(gameOver){resetGame();return}if(!pressHeld&&player.jumpsLeft>0){player.vy=player.jumpPower;player.jumpsLeft--;player.holdFrames=0;player.y-=1}pressHeld=true}
-function endPress(){pressHeld=false;if(player.vy<-4)player.vy*=.55}
-function spawnObstacle(){const h=(35+Math.random()*62)*runnerScale,w=(22+Math.random()*30)*runnerScale;obstacles.push({x:innerWidth+(mobile?160:60),y:groundY-h,width:w,height:h})}
-function update(dt){if(gameOver)return;const onGround=player.y>=groundY-player.size-.5&&player.vy>=0;if(onGround){player.y=groundY-player.size;player.vy=0;player.jumpsLeft=2;player.holdFrames=0}else if(pressHeld&&player.holdFrames<player.maxHoldFrames&&player.vy<0){player.vy+=player.holdLift*dt;player.holdFrames+=dt}const g=pressHeld&&player.vy<0?player.gravity:player.fallGravity;player.vy+=g*dt;player.y+=player.vy*dt;if(player.y>groundY-player.size)player.y=groundY-player.size;spawnTimer-=dt;if(spawnTimer<=0){spawnObstacle();spawnTimer=(mobile?Math.max(72,140-speed*3):Math.max(48,105-speed*2))+Math.random()*(mobile?58:42)}for(const o of obstacles){o.x-=speed*dt;const hit=player.x<o.x+o.width&&player.x+player.size>o.x&&player.y<o.y+o.height&&player.y+player.size>o.y;if(hit)die()}obstacles=obstacles.filter(o=>o.x+o.width>0);score+=.06*dt;speed+=(mobile?.00075:.0012)*dt;scoreEl.textContent=Math.floor(score)}
-function draw(){ctx.fillStyle='#050505';ctx.fillRect(0,0,innerWidth,innerHeight);ctx.fillStyle='rgba(255,255,255,.035)';for(let x=0;x<innerWidth;x+=42)ctx.fillRect(x,0,1,innerHeight);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(0,groundY,innerWidth,2);ctx.shadowColor='rgba(255,255,255,.4)';ctx.shadowBlur=18;ctx.fillStyle='white';ctx.fillRect(player.x,player.y,player.size,player.size);ctx.shadowBlur=0;ctx.fillStyle='#ff004c';for(const o of obstacles)ctx.fillRect(o.x,o.y,o.width,o.height)}
-function loop(now){const dt=Math.min((now-lastTime)/16.67,2);lastTime=now;update(dt);draw();requestAnimationFrame(loop)}
-addEventListener('resize',()=>{resize();resetGame()});addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat)startPress()}});addEventListener('keyup',e=>{if(e.code==='Space')endPress()});addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;startPress()});addEventListener('pointerup',endPress);addEventListener('pointercancel',endPress);restartBtn.addEventListener('click',resetGame);resetBestBtn.addEventListener('click',()=>{best=0;localStorage.setItem('void_best','0');bestEl.textContent='0'});instantBtn.addEventListener('click',()=>{instant=!instant;localStorage.setItem('void_auto_restart',String(instant));updateInstantButton()});resize();updateInstantButton();resetGame();requestAnimationFrame(loop);
-</script>
+  <div id="game"></div>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+  <script type="module" src="src/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
