@@ -1,439 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Void Runner</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      background: #050505;
-      overflow: hidden;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      touch-action: none;
-      color: white;
-    }
-
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
-
-    .hud {
-      position: fixed;
-      top: 14px;
-      left: 14px;
-      right: 14px;
-      z-index: 10;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      pointer-events: none;
-    }
-
-    .panel {
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
-      padding: 10px 12px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 0 30px rgba(255, 0, 76, 0.08);
-    }
-
-    .score-row {
-      display: flex;
-      gap: 16px;
-      font-size: 13px;
-      color: #aaa;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .score-row strong {
-      display: block;
-      margin-top: 4px;
-      color: white;
-      font-size: 22px;
-      letter-spacing: 0;
-    }
-
-    .controls {
-      pointer-events: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: flex-end;
-      font-size: 12px;
-      color: #aaa;
-    }
-
-    button {
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      background: rgba(255, 255, 255, 0.08);
-      color: white;
-      border-radius: 999px;
-      padding: 8px 12px;
-      font: inherit;
-      cursor: pointer;
-    }
-
-    label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      user-select: none;
-    }
-
-    .hint {
-      position: fixed;
-      bottom: 18px;
-      width: 100%;
-      text-align: center;
-      color: rgba(255, 255, 255, 0.45);
-      font-size: 12px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      background: rgba(5, 5, 5, 0.55);
-      backdrop-filter: blur(4px);
-      text-align: center;
-      padding: 24px;
-    }
-
-    .overlay.show {
-      display: flex;
-    }
-
-    .game-over-card {
-      max-width: 420px;
-      width: 100%;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5);
-    }
-
-    .game-over-card h1 {
-      font-size: 34px;
-      margin-bottom: 10px;
-      letter-spacing: -0.04em;
-    }
-
-    .game-over-card p {
-      color: #aaa;
-      margin-bottom: 18px;
-      line-height: 1.5;
-    }
-
-    @media (max-width: 600px) {
-      .hud {
-        top: 10px;
-        left: 10px;
-        right: 10px;
-      }
-
-      .score-row {
-        gap: 10px;
-        font-size: 11px;
-      }
-
-      .score-row strong {
-        font-size: 18px;
-      }
-
-      .controls {
-        font-size: 11px;
-      }
-
-      button {
-        padding: 7px 10px;
-      }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Void Runner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{background:#050505;color:white;overflow:hidden;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;touch-action:none}canvas{display:block;width:100vw;height:100vh}.hud{position:fixed;top:14px;left:14px;right:14px;z-index:10;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}.panel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 12px;backdrop-filter:blur(10px)}.score{display:flex;gap:16px;font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.08em}.score strong{display:block;margin-top:4px;color:white;font-size:22px;letter-spacing:0}.controls{pointer-events:auto;display:flex;flex-direction:column;gap:8px;align-items:flex-end}button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:white;border-radius:999px;padding:8px 12px;font:inherit;cursor:pointer}.toggle.on{background:rgba(255,0,76,.38);border-color:rgba(255,0,76,.75)}.hint{position:fixed;bottom:18px;width:100%;text-align:center;color:rgba(255,255,255,.45);font-size:12px;letter-spacing:.14em;text-transform:uppercase;z-index:10;pointer-events:none}.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:20;background:rgba(5,5,5,.55);backdrop-filter:blur(4px);text-align:center;padding:24px}.overlay.show{display:flex}.card{max-width:420px;width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:28px;box-shadow:0 20px 80px rgba(0,0,0,.5)}.card h1{font-size:34px;margin-bottom:10px}.card p{color:#aaa;margin-bottom:18px;line-height:1.5}@media(max-width:600px){.hud{top:10px;left:10px;right:10px}.score{gap:10px;font-size:11px}.score strong{font-size:18px}button{padding:7px 10px;font-size:11px}}
+</style>
 </head>
 <body>
-  <div class="hud">
-    <div class="panel score-row">
-      <div>Score<strong id="score">0</strong></div>
-      <div>Best<strong id="best">0</strong></div>
-    </div>
-
-    <div class="panel controls">
-      <button id="resetBest">Reset Best</button>
-      <label>
-        <input id="autoRestart" type="checkbox" />
-        instant restart
-      </label>
-    </div>
-  </div>
-
-  <div id="overlay" class="overlay">
-    <div class="game-over-card">
-      <h1>you fell</h1>
-      <p>Tap, click, or press space once to restart.</p>
-      <button id="restartButton">Restart</button>
-    </div>
-  </div>
-
-  <div class="hint">hold = longer jump · release = fall · second tap = double jump</div>
-  <canvas id="game"></canvas>
-
-  <script>
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score');
-    const bestEl = document.getElementById('best');
-    const overlay = document.getElementById('overlay');
-    const restartButton = document.getElementById('restartButton');
-    const resetBestButton = document.getElementById('resetBest');
-    const autoRestartCheckbox = document.getElementById('autoRestart');
-
-    let w = 0;
-    let h = 0;
-    let groundY = 0;
-    let lastTime = performance.now();
-    let spawnTimer = 0;
-    let gameOver = false;
-    let pressHeld = false;
-    let best = Number(localStorage.getItem('void_best') || 0);
-    let autoRestart = localStorage.getItem('void_auto_restart') === 'true';
-
-    autoRestartCheckbox.checked = autoRestart;
-    bestEl.textContent = best;
-
-    const player = {
-      x: 120,
-      y: 0,
-      size: 40,
-      vy: 0,
-      jumpsLeft: 2,
-      holdFrames: 0,
-      maxHoldFrames: 16,
-      gravity: 0.92,
-      fallGravity: 1.18,
-      jumpPower: -15.5,
-      holdLift: -0.55
-    };
-
-    let obstacles = [];
-    let score = 0;
-    let speed = 8;
-
-    function resize() {
-      w = canvas.width = window.innerWidth * window.devicePixelRatio;
-      h = canvas.height = window.innerHeight * window.devicePixelRatio;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-      groundY = window.innerHeight - Math.max(95, window.innerHeight * 0.16);
-      if (!gameOver && player.y === 0) player.y = groundY - player.size;
-    }
-
-    function resetGame() {
-      obstacles = [];
-      score = 0;
-      speed = 8;
-      spawnTimer = 60;
-      gameOver = false;
-      pressHeld = false;
-      player.y = groundY - player.size;
-      player.vy = 0;
-      player.jumpsLeft = 2;
-      player.holdFrames = 0;
-      overlay.classList.remove('show');
-    }
-
-    function saveBest() {
-      const finalScore = Math.floor(score);
-      if (finalScore > best) {
-        best = finalScore;
-        localStorage.setItem('void_best', String(best));
-        bestEl.textContent = best;
-      }
-    }
-
-    function die() {
-      saveBest();
-      if (autoRestart) {
-        resetGame();
-      } else {
-        gameOver = true;
-        overlay.classList.add('show');
-      }
-    }
-
-    function startPress() {
-      if (gameOver) {
-        resetGame();
-        return;
-      }
-
-      if (!pressHeld && player.jumpsLeft > 0) {
-        player.vy = player.jumpPower;
-        player.jumpsLeft -= 1;
-        player.holdFrames = 0;
-      }
-
-      pressHeld = true;
-    }
-
-    function endPress() {
-      pressHeld = false;
-      if (player.vy < -4) player.vy *= 0.55;
-    }
-
-    function spawnObstacle() {
-      const height = 35 + Math.random() * 62;
-      const width = 22 + Math.random() * 30;
-      obstacles.push({
-        x: window.innerWidth + 60,
-        y: groundY - height,
-        width,
-        height
-      });
-    }
-
-    function update(dt) {
-      if (gameOver) return;
-
-      const onGround = player.y >= groundY - player.size - 0.5;
-
-      if (onGround) {
-        player.y = groundY - player.size;
-        player.vy = 0;
-        player.jumpsLeft = 2;
-        player.holdFrames = 0;
-      } else if (pressHeld && player.holdFrames < player.maxHoldFrames && player.vy < 0) {
-        player.vy += player.holdLift * dt;
-        player.holdFrames += dt;
-      }
-
-      const gravity = pressHeld && player.vy < 0 ? player.gravity : player.fallGravity;
-      player.vy += gravity * dt;
-      player.y += player.vy * dt;
-
-      if (player.y > groundY - player.size) {
-        player.y = groundY - player.size;
-      }
-
-      spawnTimer -= dt;
-      if (spawnTimer <= 0) {
-        spawnObstacle();
-        spawnTimer = Math.max(48, 105 - speed * 2) + Math.random() * 42;
-      }
-
-      for (const obstacle of obstacles) {
-        obstacle.x -= speed * dt;
-
-        const hit =
-          player.x < obstacle.x + obstacle.width &&
-          player.x + player.size > obstacle.x &&
-          player.y < obstacle.y + obstacle.height &&
-          player.y + player.size > obstacle.y;
-
-        if (hit) die();
-      }
-
-      obstacles = obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
-      score += 0.06 * dt;
-      speed += 0.0012 * dt;
-      scoreEl.textContent = Math.floor(score);
-    }
-
-    function draw() {
-      const viewW = window.innerWidth;
-      const viewH = window.innerHeight;
-
-      ctx.fillStyle = '#050505';
-      ctx.fillRect(0, 0, viewW, viewH);
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
-      for (let x = 0; x < viewW; x += 42) {
-        ctx.fillRect(x, 0, 1, viewH);
-      }
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-      ctx.fillRect(0, groundY, viewW, 2);
-
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-      ctx.shadowBlur = 18;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(player.x, player.y, player.size, player.size);
-      ctx.shadowBlur = 0;
-
-      ctx.fillStyle = '#ff004c';
-      for (const obstacle of obstacles) {
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-      }
-    }
-
-    function loop(now) {
-      const dt = Math.min((now - lastTime) / 16.67, 2);
-      lastTime = now;
-      update(dt);
-      draw();
-      requestAnimationFrame(loop);
-    }
-
-    window.addEventListener('resize', () => {
-      resize();
-      resetGame();
-    });
-
-    window.addEventListener('keydown', event => {
-      if (event.code === 'Space') {
-        event.preventDefault();
-        if (!event.repeat) startPress();
-      }
-    });
-
-    window.addEventListener('keyup', event => {
-      if (event.code === 'Space') endPress();
-    });
-
-    window.addEventListener('pointerdown', event => {
-      if (event.target.closest('button, label, input')) return;
-      startPress();
-    });
-
-    window.addEventListener('pointerup', endPress);
-    window.addEventListener('pointercancel', endPress);
-
-    restartButton.addEventListener('click', resetGame);
-
-    resetBestButton.addEventListener('click', () => {
-      best = 0;
-      localStorage.setItem('void_best', '0');
-      bestEl.textContent = '0';
-    });
-
-    autoRestartCheckbox.addEventListener('change', () => {
-      autoRestart = autoRestartCheckbox.checked;
-      localStorage.setItem('void_auto_restart', String(autoRestart));
-    });
-
-    resize();
-    resetGame();
-    requestAnimationFrame(loop);
-  </script>
+<div class="hud">
+  <div class="panel score"><div>Score<strong id="score">0</strong></div><div>Best<strong id="best">0</strong></div></div>
+  <div class="panel controls"><button id="resetBest">Reset Best</button><button id="instant" class="toggle">Instant: Off</button></div>
+</div>
+<div id="overlay" class="overlay"><div class="card"><h1>Game Over</h1><p>Tap, click, or press space once to restart.</p><button id="restart">Restart</button></div></div>
+<div class="hint">hold = longer jump · release = fall · second tap = double jump</div>
+<canvas id="game"></canvas>
+<script>
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const scoreEl=document.getElementById('score');
+const bestEl=document.getElementById('best');
+const overlay=document.getElementById('overlay');
+const restartBtn=document.getElementById('restart');
+const resetBestBtn=document.getElementById('resetBest');
+const instantBtn=document.getElementById('instant');
+let groundY=0,lastTime=performance.now(),spawnTimer=0,gameOver=false,pressHeld=false;
+let score=0,speed=8,obstacles=[];
+let best=Number(localStorage.getItem('void_best')||0);
+let instant=localStorage.getItem('void_auto_restart')==='true';
+const player={x:120,y:0,size:40,vy:0,jumpsLeft:2,holdFrames:0,maxHoldFrames:16,gravity:.92,fallGravity:1.18,jumpPower:-15.5,holdLift:-.55};
+bestEl.textContent=best;
+function resize(){canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);groundY=innerHeight-Math.max(95,innerHeight*.16);if(player.y===0)player.y=groundY-player.size}
+function updateInstantButton(){instantBtn.textContent=instant?'Instant: On':'Instant: Off';instantBtn.classList.toggle('on',instant)}
+function resetGame(){obstacles=[];score=0;speed=8;spawnTimer=60;gameOver=false;pressHeld=false;player.y=groundY-player.size;player.vy=0;player.jumpsLeft=2;player.holdFrames=0;overlay.classList.remove('show')}
+function saveBest(){const finalScore=Math.floor(score);if(finalScore>best){best=finalScore;localStorage.setItem('void_best',String(best));bestEl.textContent=best}}
+function die(){saveBest();if(instant){resetGame()}else{gameOver=true;overlay.classList.add('show')}}
+function startPress(){if(gameOver){resetGame();return}if(!pressHeld&&player.jumpsLeft>0){player.vy=player.jumpPower;player.jumpsLeft--;player.holdFrames=0;player.y-=1}pressHeld=true}
+function endPress(){pressHeld=false;if(player.vy<-4)player.vy*=.55}
+function spawnObstacle(){const height=35+Math.random()*62;const width=22+Math.random()*30;obstacles.push({x:innerWidth+60,y:groundY-height,width,height})}
+function update(dt){if(gameOver)return;const onGround=player.y>=groundY-player.size-.5&&player.vy>=0;if(onGround){player.y=groundY-player.size;player.vy=0;player.jumpsLeft=2;player.holdFrames=0}else if(pressHeld&&player.holdFrames<player.maxHoldFrames&&player.vy<0){player.vy+=player.holdLift*dt;player.holdFrames+=dt}const gravity=pressHeld&&player.vy<0?player.gravity:player.fallGravity;player.vy+=gravity*dt;player.y+=player.vy*dt;if(player.y>groundY-player.size)player.y=groundY-player.size;spawnTimer-=dt;if(spawnTimer<=0){spawnObstacle();spawnTimer=Math.max(48,105-speed*2)+Math.random()*42}for(const o of obstacles){o.x-=speed*dt;const hit=player.x<o.x+o.width&&player.x+player.size>o.x&&player.y<o.y+o.height&&player.y+player.size>o.y;if(hit)die()}obstacles=obstacles.filter(o=>o.x+o.width>0);score+=.06*dt;speed+=.0012*dt;scoreEl.textContent=Math.floor(score)}
+function draw(){ctx.fillStyle='#050505';ctx.fillRect(0,0,innerWidth,innerHeight);ctx.fillStyle='rgba(255,255,255,.035)';for(let x=0;x<innerWidth;x+=42)ctx.fillRect(x,0,1,innerHeight);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(0,groundY,innerWidth,2);ctx.shadowColor='rgba(255,255,255,.4)';ctx.shadowBlur=18;ctx.fillStyle='white';ctx.fillRect(player.x,player.y,player.size,player.size);ctx.shadowBlur=0;ctx.fillStyle='#ff004c';for(const o of obstacles)ctx.fillRect(o.x,o.y,o.width,o.height)}
+function loop(now){const dt=Math.min((now-lastTime)/16.67,2);lastTime=now;update(dt);draw();requestAnimationFrame(loop)}
+addEventListener('resize',()=>{resize();resetGame()});
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat)startPress()}});
+addEventListener('keyup',e=>{if(e.code==='Space')endPress()});
+addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;startPress()});
+addEventListener('pointerup',endPress);addEventListener('pointercancel',endPress);
+restartBtn.addEventListener('click',resetGame);
+resetBestBtn.addEventListener('click',()=>{best=0;localStorage.setItem('void_best','0');bestEl.textContent='0'});
+instantBtn.addEventListener('click',()=>{instant=!instant;localStorage.setItem('void_auto_restart',String(instant));updateInstantButton()});
+resize();updateInstantButton();resetGame();requestAnimationFrame(loop);
+</script>
 </body>
 </html>
